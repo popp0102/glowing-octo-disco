@@ -1,34 +1,59 @@
 "use strict";
 
 const Bluebird = require("bluebird");
-const { sortByDate, constructLogSourceMap, printNextEntry } = require('./common');
+const { sortByDate, printNextEntry } = require('./common');
 
 // Print all entries, across all of the *async* sources, in chronological order.
 
 module.exports = (logSources, printer) => {
+  const BATCH = 100;
+
+  function constructLogSourceMap(logSources) {
+    let logSourceMap = {};
+
+    for (let i=0; i < logSources.length; i++) {
+      logSourceMap[i] = { logSource: logSources[i], local: 0, drained: false };
+    }
+
+    return logSourceMap;
+  }
+
   function popLogSourceAsync(logSourceMap, index, sortingList) {
-    let logSource       = logSources[index];
-    let logEntryPromise = logSource.popAsync();
+    if (!logSourceMap[index]) {
+      return;
+    }
+
+    let logEntryPromise = logSourceMap[index].logSource.popAsync();
 
     logEntryPromise.then(log => {
       if (!log) {
-        delete logSourceMap[index];
+        logSourceMap[index].drained = true;
       } else {
         sortingList.push({ log, index });
+        logSourceMap[index].local += 1;
+        logSourceMap[index].drained = false;
       }
     }).catch(error => console.log(`Error: ${error}! Handle it some way!`));
 
     return logEntryPromise;
   }
 
-  function populateSortingList(sortingList, logSourceMap) {
+  async function populateSortingList(sortingList, logSourceMap) {
     let promiseList = [];
-    for (let i = 0; i < Object.keys(logSourceMap).length; i++) {
-      let logEntryPromise = popLogSourceAsync(logSourceMap, i, sortingList);
-      promiseList.push(logEntryPromise);
-    }
+    for (let j = 0; j < BATCH; j++) {
+      for (let i = 0; i < Object.keys(logSourceMap).length; i++) {
+        if (!logSourceMap[i] || logSourceMap[i].local >= BATCH || logSourceMap[i].drained) {
+          continue;
+        }
 
-    return Bluebird.all(promiseList);
+        let logEntryPromise = popLogSourceAsync(logSourceMap, i, sortingList);
+        if (logEntryPromise) {
+          promiseList.push(logEntryPromise);
+        }
+      }
+
+      await Bluebird.all(promiseList);
+    }
   }
 
   return new Promise(async (resolve, reject) => {
@@ -40,14 +65,29 @@ module.exports = (logSources, printer) => {
       sortingList.sort(sortByDate);
 
       while(Object.keys(logSourceMap).length > 0) {
-        let index = printNextEntry(sortingList, printer);
-        await popLogSourceAsync(logSourceMap, index, sortingList);
+        for (let i = 0; i < BATCH; i++) {
+          let entry = sortingList.shift();
+          if (!entry) {
+            continue;
+          }
+
+          let {log, index} = entry;
+          printer.print(log);
+
+          logSourceMap[index].local -= 1;
+          if (logSourceMap[index].drained && logSourceMap[index].local <= 0) {
+            delete logSourceMap[index];
+          }
+        }
+
+        await populateSortingList(sortingList, logSourceMap);
         sortingList.sort(sortByDate);
       }
 
       printer.done();
       resolve(console.log("Async sort complete."));
     } catch (error) {
+      throw error;
       reject(error);
     }
   })
