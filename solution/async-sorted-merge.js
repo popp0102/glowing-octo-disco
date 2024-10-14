@@ -66,13 +66,10 @@ module.exports = (logSources, printer) => {
 
       while(Object.keys(logSourceMap).length > 0) {
         for (let i = 0; i < BATCH; i++) {
-          let entry = sortingList.shift();
-          if (!entry) {
-            continue;
+          let index = printNextEntry(sortingList, printer);
+          if (index === -1) {
+            continue
           }
-
-          let {log, index} = entry;
-          printer.print(log);
 
           logSourceMap[index].local -= 1;
           if (logSourceMap[index].drained && logSourceMap[index].local <= 0) {

@@ -1,6 +1,6 @@
 "use strict";
 
-const { sortByDate, constructLogSourceMap, printNextEntry } = require('./common');
+const { sortByDate, printNextEntry } = require('./common');
 
 // Print all entries, across all of the sources, in chronological order.
 
@@ -14,6 +14,16 @@ module.exports = (logSources, printer) => {
     }
 
     return logEntry;
+  }
+
+  function constructLogSourceMap(logSources) {
+    let logSourceMap = {};
+
+    for (let i=0; i < logSources.length; i++) {
+      logSourceMap[i] = logSources[i];
+    }
+
+    return logSourceMap;
   }
 
   function populateSortingList(logSourceMap) {

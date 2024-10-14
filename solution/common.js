@@ -1,25 +1,21 @@
 const sortByDate = (a, b) => a.log.date - b.log.date;
 
-function constructLogSourceMap(logSources) {
-  let logSourceMap = {};
-
-  for (let i=0; i < logSources.length; i++) {
-    logSourceMap[i] = logSources[i];
-  }
-
-  return logSourceMap;
-}
-
 function printNextEntry(sortingList, printer) {
-  let {log, index} = sortingList.shift();
-  printer.print(log);
+  let entry = sortingList.shift();
+  let index;
+
+  if (entry) {
+    index = entry.index;
+    printer.print(entry.log);
+  } else {
+    index = -1;
+  }
 
   return index;
 }
 
 module.exports = {
   sortByDate,
-  constructLogSourceMap,
   printNextEntry,
 };
 
