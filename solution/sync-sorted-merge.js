@@ -1,6 +1,6 @@
 "use strict";
 
-const { sortByDate, printNextEntry } = require('./common');
+const { sortByDate, printNextEntry, DEBUG } = require('./common');
 
 // Print all entries, across all of the sources, in chronological order.
 
@@ -52,6 +52,10 @@ module.exports = (logSources, printer) => {
       if (nextLog) {
         sortingList.push({ log: nextLog, index: index });
         sortingList.sort(sortByDate);
+      }
+
+      if (DEBUG) {
+        console.log("SortingList Size: " + sortingList.length);
       }
     }
   }

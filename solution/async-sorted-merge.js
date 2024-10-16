@@ -1,7 +1,7 @@
 "use strict";
 
 const Bluebird = require("bluebird");
-const { sortByDate, printNextEntry } = require('./common');
+const { sortByDate, printNextEntry, DEBUG } = require('./common');
 
 // Print all entries, across all of the *async* sources, in chronological order.
 
@@ -79,6 +79,9 @@ module.exports = (logSources, printer) => {
 
         await populateSortingList(sortingList, logSourceMap);
         sortingList.sort(sortByDate);
+        if (DEBUG) {
+          console.log("SortingList Size: " + sortingList.length);
+        }
       }
 
       printer.done();

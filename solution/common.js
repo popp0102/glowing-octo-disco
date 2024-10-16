@@ -1,3 +1,4 @@
+const DEBUG = true;
 const sortByDate = (a, b) => a.log.date - b.log.date;
 
 function printNextEntry(sortingList, printer) {
@@ -6,7 +7,9 @@ function printNextEntry(sortingList, printer) {
 
   if (entry) {
     index = entry.index;
-    printer.print(entry.log);
+    if (!DEBUG) {
+      printer.print(entry.log);
+    }
   } else {
     index = -1;
   }
@@ -17,5 +20,6 @@ function printNextEntry(sortingList, printer) {
 module.exports = {
   sortByDate,
   printNextEntry,
+  DEBUG,
 };
 
